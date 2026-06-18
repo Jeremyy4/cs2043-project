@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saint John ER Pre-Triage</title>
+<style>
+  :root {
+    --red: #C0392B;
+    --red-dark: #8B1E1E;
+    --orange: #E67E22;
+    --yellow: #D4AC0D;
+    --green: #27AE60;
+    --blue: #2980B9;
+    --bg: #F7F9FC;
+    --card: #FFFFFF;
+    --text: #1A2332;
+    --muted: #6B7A90;
+    --border: #DDE3EC;
+    --accent: #1A4A7A;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: #000000;
+  }
+  .block-container {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 2rem 16px 2.5rem;
+  }
+  .hero-header {
+    background: var(--accent);
+    color: white;
+    padding: 20px 24px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-radius: 0 0 14px 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    margin-bottom: 18px;
+  }
+  .cross {
+    width: 38px;
+    height: 38px;
+    background: white;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    font-size: 22px;
+  }
+  .hero-title { font-size: 18px; font-weight: 700; line-height: 1.2; margin: 0; }
+  .hero-subtitle { font-size: 12px; opacity: .78; margin-top: 2px; }
+  .browser-banner {
+    background: #FFF8E1;
+    border-bottom: 2px solid #FFD54F;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 0 0 18px;
+    border-radius: 10px;
+    color: #000000;
+  }
+  .browser-banner strong, .browser-banner span { color: #000000; }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 24px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-title.mt { margin-top: 20px; }
+  .legend { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .ctas-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-weight: 700;
+    font-size: 22px;
+    margin-bottom: 16px;
+    color: white;
+  }
+  .ctas-badge small { font-size: 13px; font-weight: 600; display: block; opacity: .9; }
+  .result-section { margin-top: 16px; }
+  .result-section h4 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .result-section p { font-size: 14px; line-height: 1.6; color: #000000; margin: 0; }
+  .red-flags { list-style: none; padding-left: 0; margin: 0; }
+  .red-flags li {
+    font-size: 14px;
+    padding: 6px 10px;
+    background: #FFF5F5;
+    border-left: 3px solid var(--red-dark);
+    color: var(--red-dark);
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 6px;
+  }
+  .red-flags li::before { content: "🚩 "; color: var(--red-dark); }
+  .helper-text { color: var(--muted); font-size: 0.92rem; }
+  .field-label {
+    color: #000000;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    display: block;
+  }
+  .field { margin-bottom: 16px; }
+  .field input[type="text"],
+  .field input[type="number"],
+  .field select,
+  .field textarea {
+    width: 100%;
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .field textarea { resize: vertical; }
+  .field input::placeholder, .field textarea::placeholder { color: #666666; opacity: 1; }
+  .row { display: flex; gap: 14px; }
+  .row .field { flex: 1; }
+  .slider-row { display: flex; align-items: center; gap: 12px; }
+  .slider-row input[type="range"] { flex: 1; }
+  .slider-value { font-weight: 700; min-width: 28px; text-align: center; }
+  .radio-group { display: flex; gap: 18px; }
+  .radio-group label { display: flex; align-items: center; gap: 6px; font-weight: 600; color: #000000; cursor: pointer; }
+  .error-box {
+    background: #FFF5F5;
+    border: 1px solid var(--red);
+    color: var(--red-dark);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  button.submit-btn {
+    width: 100%;
+    background: var(--red);
+    color: #ffffff;
+    border: 1px solid var(--red);
+    font-weight: 800;
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  button.submit-btn:hover { background: #A93226; border-color: #A93226; }
+  button.secondary-btn {
+    width: 100%;
+    border-radius: 10px;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    background: transparent;
+    font-weight: 700;
+    padding: 0.8rem 1rem;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  button.secondary-btn:hover { background: rgba(26,74,122,0.06); }
+  .patient-line { margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="block-container">
+
+  <div class="hero-header">
+    <div class="cross">🏥</div>
+    <div>
+      <div class="hero-title">Saint John ER Pre-Triage</div>
+      <div class="hero-subtitle">AI-assisted CTAS assessment · For demonstration only</div>
+    </div>
+  </div>
+
+  <div class="browser-banner">
+    <strong>Browser note:</strong>
+    <span>This page runs entirely in your browser — no server needed, the form and results work as a standalone app.</span>
+  </div>
+
+  <div class="card" style="padding:14px 20px;">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">CTAS PRIORITY SCALE</div>
+    <div class="legend">
+      <div class="legend-item"><div class="dot" style="background:#C0392B"></div> 1 · Resuscitation</div>
+      <div class="legend-item"><div class="dot" style="background:#E67E22"></div> 2 · Emergent</div>
+      <div class="legend-item"><div class="dot" style="background:#D4AC0D"></div> 3 · Urgent</div>
+      <div class="legend-item"><div class="dot" style="background:#27AE60"></div> 4 · Less Urgent</div>
+      <div class="legend-item"><div class="dot" style="background:#2980B9"></div> 5 · Non-Urgent</div>
+    </div>
+  </div>
+
+  <!-- FORM VIEW -->
+  <div id="formView">
+    <div class="card">
+      <div class="card-title">Patient Information</div>
+
+      <div id="errorBox"></div>
+
+      <div class="field">
+        <label class="field-label">Full Name</label>
+        <input type="text" id="name" placeholder="e.g. Jane Smith">
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label class="field-label">Age</label>
+          <input type="number" id="age" min="0" max="120" value="30">
+        </div>
+        <div class="field">
+          <label class="field-label">Gender</label>
+          <select id="gender">
+            <option value="">Select…</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Pain Level</label>
+        <div class="slider-row">
+          <input type="range" id="pain" min="1" max="10" value="5" oninput="document.getElementById('painVal').textContent=this.value">
+          <span class="slider-value" id="painVal">5</span>
+        </div>
+      </div>
+
+      <div class="card-title mt">Symptoms</div>
+
+      <div class="field">
+        <label class="field-label">Chief Complaint</label>
+        <textarea id="symptom" rows="2" placeholder="Describe the main symptom or reason for visit…"></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Duration</label>
+        <input type="text" id="duration" placeholder="e.g. 2 hours, since yesterday morning">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Medical History</label>
+        <textarea id="history" rows="3" placeholder="e.g. hypertension, diabetes, allergies…"></textarea>
+      </div>
+
+      <div class="card-title mt">Visit Details</div>
+
+      <div class="field">
+        <label class="field-label">Emergency Room</label>
+        <div class="radio-group">
+          <label><input type="radio" name="er" value="ER1" checked> ER1</label>
+          <label><input type="radio" name="er" value="ER2"> ER2</label>
+        </div>
+      </div>
+
+      <button class="submit-btn" onclick="submitForm()">🤖 Submit for CTAS Assessment</button>
+      <p class="helper-text" style="margin-top:12px;">Fill out the form and submit to generate a CTAS-style result card, red flags, and a queue estimate.</p>
+    </div>
+  </div>
+
+  <!-- RESULT VIEW -->
+  <div id="resultView" style="display:none;">
+    <div class="card">
+      <div class="patient-line" id="patientLine"></div>
+      <div class="ctas-badge" id="ctasBadge">
+        <span style="font-size:32px" id="ctasIcon"></span>
+        <div>
+          <span id="ctasScoreText"></span>
+          <small id="ctasLabelText"></small>
+        </div>
+      </div>
+
+      <div class="result-section">
+        <h4>Clinical Summary</h4>
+        <p id="clinicalSummary"></p>
+      </div>
+
+      <div class="result-section">
+        <h4>Red Flags</h4>
+        <ul class="red-flags" id="redFlagsList"></ul>
+      </div>
+
+      <button class="secondary-btn" onclick="resetPatient()">← New Patient Check-In</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function parseDurationHours(durationText) {
+  const text = durationText.toLowerCase().trim();
+  const match = text.match(/(\d+(?:\.\d+)?)\s*(hour|hours|hr|hrs|h)\b/);
+  if (match) {
+    return Math.max(0.0, parseFloat(match[1]));
+  }
+  if (text.includes("day")) return 24.0;
+  if (text.includes("minute") || text.includes("min")) return 1.0;
+  return 6.0;
+}
+
+function assessTriage(age, pain, fever, symptomText, durationHours, history, erLocation) {
+  let score = 5;
+  let reasons = [];
+  symptomText = symptomText.toLowerCase();
+  history = history.toLowerCase();
+
+  const highRiskTerms = ["chest pain", "shortness of breath", "trouble breathing", "stroke", "unconscious"];
+  if (highRiskTerms.some(t => symptomText.includes(t))) {
+    score = Math.min(score, 2);
+    reasons.push("high-risk symptom pattern");
+  }
+
+  const acuteTerms = ["severe", "bleeding", "trauma", "broken", "fracture"];
+  if (acuteTerms.some(t => symptomText.includes(t))) {
+    score = Math.min(score, 2);
+    reasons.push("acute injury or bleeding concern");
+  }
+
+  if (fever >= 39 || pain >= 8) {
+    score = Math.min(score, 3);
+    reasons.push("high symptom severity");
+  } else if (fever >= 38 || pain >= 6) {
+    score = Math.min(score, 4);
+    reasons.push("moderate symptom severity");
+  }
+
+  if (age >= 75 && score > 3) {
+    score = 3;
+    reasons.push("older adult risk");
+  }
+
+  if (history.includes("diabetes") || history.includes("heart") || history.includes("asthma")) {
+    score = Math.min(score, 4);
+    reasons.push("relevant medical history");
+  }
+
+  if (durationHours <= 2 && score > 2) {
+    score = 3;
+    reasons.push("recent onset");
+  }
+
+  if (erLocation === "ER1") {
+    reasons.push("assigned to ER1");
+  } else {
+    reasons.push("assigned to ER2");
+  }
+
+  const labels = {
+    1: "Resuscitation",
+    2: "Emergent",
+    3: "Urgent",
+    4: "Less Urgent",
+    5: "Non-Urgent",
+  };
+  const label = labels[score];
+
+  if (reasons.length === 0) reasons = ["stable presentation"];
+
+  return { score, label, reasons };
+}
+
+function estimateWaitTime(priority, peopleAhead) {
+  const baseByPriority = { 1: 10, 2: 20, 3: 35, 4: 55, 5: 75 };
+  return baseByPriority[priority] + peopleAhead * 12;
+}
+
+function capitalize(str) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function showError(msg) {
+  document.getElementById("errorBox").innerHTML =
+    `<div class="error-box">${msg}</div>`;
+}
+
+function clearError() {
+  document.getElementById("errorBox").innerHTML = "";
+}
+
+function submitForm() {
+  clearError();
+
+  const name = document.getElementById("name").value;
+  const age = parseInt(document.getElementById("age").value, 10);
+  const gender = document.getElementById("gender").value;
+  const pain = parseInt(document.getElementById("pain").value, 10);
+  const symptom = document.getElementById("symptom").value;
+  const duration = document.getElementById("duration").value;
+  const history = document.getElementById("history").value;
+  const erLocation = document.querySelector('input[name="er"]:checked').value;
+
+  if (!gender) {
+    showError("Please select gender before submitting.");
+    return;
+  }
+  if (!name.trim()) {
+    showError("Please enter the patient name before submitting.");
+    return;
+  }
+  if (!symptom.trim()) {
+    showError("Please describe the chief complaint before submitting.");
+    return;
+  }
+  if (!duration.trim()) {
+    showError("Please enter symptom duration before submitting.");
+    return;
+  }
+
+  const durationHours = parseDurationHours(duration);
+  const { score, label, reasons } = assessTriage(age, pain, 37.0, symptom, durationHours, history, erLocation);
+  const waitMinutes = estimateWaitTime(score, 0);
+
+  renderResult({
+    name, age, gender, erLocation,
+    triageScore: score,
+    triageLabel: label,
+    reasons,
+    waitMinutes,
+    symptom,
+    history,
+  });
+}
+
+function renderResult(result) {
+  const badgeColors = { 1: "#C0392B", 2: "#E67E22", 3: "#D4AC0D", 4: "#27AE60", 5: "#2980B9" };
+  const badgeIcons = { 1: "🔴", 2: "🟠", 3: "🟡", 4: "🟢", 5: "🔵" };
+
+  document.getElementById("patientLine").textContent =
+    `Patient: ${result.name}, ${result.age} y/o ${result.gender}`;
+
+  const badge = document.getElementById("ctasBadge");
+  badge.style.background = badgeColors[result.triageScore];
+  document.getElementById("ctasIcon").textContent = badgeIcons[result.triageScore];
+  document.getElementById("ctasScoreText").textContent = `CTAS ${result.triageScore}`;
+  document.getElementById("ctasLabelText").textContent = result.triageLabel;
+
+  document.getElementById("clinicalSummary").innerHTML =
+    `${capitalize(result.reasons.join(", "))}. Estimated wait time is about <strong>${result.waitMinutes} minutes</strong> for ${result.erLocation}.`;
+
+  const redFlags = [];
+  const symptomLower = result.symptom.toLowerCase();
+  const historyLower = result.history.toLowerCase();
+  const highRiskTerms = ["chest pain", "shortness of breath", "bleeding", "stroke", "unconscious"];
+  if (highRiskTerms.some(t => symptomLower.includes(t))) {
+    redFlags.push("High-risk symptom requires immediate clinician review.");
+  }
+  if (["heart", "diabetes", "asthma"].some(t => historyLower.includes(t))) {
+    redFlags.push("Medical history may increase triage urgency.");
+  }
+  if (redFlags.length === 0) {
+    redFlags.push("No major red flags were detected in this demo review.");
+  }
+
+  document.getElementById("redFlagsList").innerHTML =
+    redFlags.map(f => `<li>${f}</li>`).join("");
+
+  document.getElementById("formView").style.display = "none";
+  document.getElementById("resultView").style.display = "block";
+}
+
+function resetPatient() {
+  document.getElementById("name").value = "";
+  document.getElementById("age").value = 30;
+  document.getElementById("gender").value = "";
+  document.getElementById("pain").value = 5;
+  document.getElementById("painVal").textContent = "5";
+  document.getElementById("symptom").value = "";
+  document.getElementById("duration").value = "";
+  document.getElementById("history").value = "";
+  document.querySelector('input[name="er"][value="ER1"]').checked = true;
+  clearError();
+
+  document.getElementById("resultView").style.display = "none";
+  document.getElementById("formView").style.display = "block";
+}
+</script>
+
+</body>
+</html>
