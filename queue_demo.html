@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ER Queue Management — Demo</title>
+<style>
+  :root {
+    --red:    #C0392B;
+    --orange: #E67E22;
+    --yellow: #D4AC0D;
+    --green:  #27AE60;
+    --blue:   #2980B9;
+    --bg:     #F7F9FC;
+    --card:   #FFFFFF;
+    --text:   #1A2332;
+    --muted:  #6B7A90;
+    --border: #DDE3EC;
+    --accent: #1A4A7A;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  /* Header */
+  header {
+    background: var(--accent);
+    color: white;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  }
+  header h1 { font-size: 18px; font-weight: 700; }
+  header p  { font-size: 12px; opacity: .7; margin-top: 2px; }
+
+  /* Tab bar */
+  .tabs {
+    display: flex;
+    background: var(--accent);
+    padding: 0 24px;
+    border-top: 1px solid rgba(255,255,255,.15);
+  }
+  .tab {
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,.6);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: color .15s, border-color .15s;
+    user-select: none;
+  }
+  .tab.active { color: white; border-bottom-color: white; }
+
+  /* Main layout */
+  .layout {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 640px) { .layout { grid-template-columns: 1fr; } }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--muted);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-title .er-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: .04em;
+  }
+
+  /* CTAS dot */
+  .ctas-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+
+  /* Queue item */
+  .queue-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    background: #FAFBFD;
+    transition: box-shadow .15s;
+    position: relative;
+  }
+  .queue-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .queue-item.ctas-1 { border-left: 4px solid var(--red);    background: #FFF5F5; }
+  .queue-item.ctas-2 { border-left: 4px solid var(--orange); background: #FFF8F0; }
+  .queue-item.ctas-3 { border-left: 4px solid var(--yellow); background: #FFFDF0; }
+  .queue-item.ctas-4 { border-left: 4px solid var(--green);  background: #F0FFF5; }
+  .queue-item.ctas-5 { border-left: 4px solid var(--blue);   background: #F0F7FF; }
+
+  .ticket-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--muted);
+    min-width: 28px;
+    text-align: center;
+    background: var(--bg);
+    border-radius: 4px;
+    padding: 2px 4px;
+    border: 1px solid var(--border);
+  }
+  .patient-info { flex: 1; min-width: 0; }
+  .patient-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .patient-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .ctas-label {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    color: white;
+    white-space: nowrap;
+  }
+  .wait-time {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    white-space: nowrap;
+    text-align: right;
+  }
+  .dismiss-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 4px;
+    line-height: 1;
+  }
+  .dismiss-btn:hover { background: var(--bg); color: var(--red); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+
+  /* Add patient form */
+  .add-form { margin-top: 0; }
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 5px;
+  }
+  .field input, .field select {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 9px 11px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: white;
+    appearance: none;
+  }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26,74,122,.1);
+  }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+
+  .add-btn {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .15s;
+    margin-top: 4px;
+  }
+  .add-btn:hover { opacity: .88; }
+
+  /* Stats bar */
+  .stats-bar {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 16px;
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .stat-card {
+    flex: 1;
+    min-width: 120px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  .stat-val { font-size: 24px; font-weight: 800; color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* Patient ticket view */
+  #ticket-view { display: none; }
+  #ticket-view.show { display: block; }
+  .ticket-card {
+    max-width: 420px;
+    margin: 24px auto 0;
+    background: var(--card);
+    border-radius: 16px;
+    border: 2px solid var(--border);
+    padding: 30px 28px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,.08);
+  }
+  .ticket-top { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 20px; }
+  .ticket-number { font-size: 64px; font-weight: 900; color: var(--accent); line-height: 1; }
+  .ticket-name { font-size: 18px; font-weight: 700; margin-top: 8px; }
+  .ticket-er { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .ticket-ctas {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 15px;
+    color: white;
+    margin: 18px auto 0;
+  }
+  .ticket-divider { border: none; border-top: 2px dashed var(--border); margin: 20px 0; }
+  .ticket-info-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+  .ticket-info-label { font-size: 12px; color: var(--muted); }
+  .ticket-info-val { font-size: 13px; font-weight: 700; }
+  .back-btn {
+    margin-top: 20px;
+    background: none;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    transition: background .15s, color .15s;
+  }
+  .back-btn:hover { background: var(--accent); color: white; }
+
+  /* Scrollable queue list */
+  .queue-list { max-height: 420px; overflow-y: auto; }
+  .queue-list::-webkit-scrollbar { width: 4px; }
+  .queue-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="font-size:28px">🏥</div>
+  <div>
+    <h1>ER Queue Management</h1>
+    <p>Saint John ER Pre-Triage System · Staff View · Demo Only</p>
+  </div>
+</header>
+
+<!-- Tab bar -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('queue')">📋 Queue Board</div>
+  <div class="tab" onclick="switchTab('add')">➕ Add Patient</div>
+  <div class="tab" onclick="switchTab('ticket')">🎫 Patient Ticket</div>
+</div>
+
+<!-- Stats bar -->
+<div class="stats-bar" id="stats-bar">
+  <div class="stat-card">
+    <div class="stat-val" id="stat-total">0</div>
+    <div class="stat-label">Total Waiting</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" id="stat-er1">0</div>
+    <div class="stat-label">ER1 Patients</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" id="stat-er2">0</div>
+    <div class="stat-label">ER2 Patients</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" id="stat-critical">0</div>
+    <div class="stat-label">CTAS 1–2 (Critical)</div>
+  </div>
+</div>
+
+<!-- ══ Queue Board Tab ══ -->
+<div id="tab-queue">
+  <div class="layout">
+
+    <!-- ER1 Queue -->
+    <div class="card">
+      <div class="card-title">
+        ER1 Queue
+        <span class="er-badge" style="background:#1A4A7A;color:white">Saint John Regional</span>
+      </div>
+      <div class="queue-list" id="queue-er1">
+        <div class="empty-state"><div class="icon">🟢</div>No patients in queue</div>
+      </div>
+    </div>
+
+    <!-- ER2 Queue -->
+    <div class="card">
+      <div class="card-title">
+        ER2 Queue
+        <span class="er-badge" style="background:#2C5F8A;color:white">St. Joseph's</span>
+      </div>
+      <div class="queue-list" id="queue-er2">
+        <div class="empty-state"><div class="icon">🟢</div>No patients in queue</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CTAS legend -->
+  <div style="max-width:900px;margin:12px auto 0;padding:0 16px;display:flex;gap:14px;flex-wrap:wrap;">
+    <span style="font-size:11px;color:var(--muted);font-weight:700;">CTAS:</span>
+    <span style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#C0392B;display:inline-block"></span>1 Resuscitation</span>
+    <span style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#E67E22;display:inline-block"></span>2 Emergent</span>
+    <span style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#D4AC0D;display:inline-block"></span>3 Urgent</span>
+    <span style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#27AE60;display:inline-block"></span>4 Less Urgent</span>
+    <span style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#2980B9;display:inline-block"></span>5 Non-Urgent</span>
+  </div>
+</div>
+
+<!-- ══ Add Patient Tab ══ -->
+<div id="tab-add" style="display:none;">
+  <div style="max-width:480px;margin:0 auto;padding:24px 16px 0;">
+    <div class="card add-form">
+      <div class="card-title">Add Patient to Queue</div>
+
+      <div class="field">
+        <label>Patient Name *</label>
+        <input type="text" id="add-name" placeholder="e.g. Jane Smith">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Age *</label>
+          <input type="number" id="add-age" min="0" max="120" placeholder="45">
+        </div>
+        <div class="field">
+          <label>Sex *</label>
+          <select id="add-sex">
+            <option value="">Select…</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>CTAS Level *</label>
+          <select id="add-ctas">
+            <option value="">Select…</option>
+            <option value="1">1 — Resuscitation</option>
+            <option value="2">2 — Emergent</option>
+            <option value="3">3 — Urgent</option>
+            <option value="4">4 — Less Urgent</option>
+            <option value="5">5 — Non-Urgent</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ER Location *</label>
+          <select id="add-er">
+            <option value="">Select…</option>
+            <option value="ER1">ER1 — Regional</option>
+            <option value="ER2">ER2 — St. Joseph's</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Chief Complaint (optional)</label>
+        <input type="text" id="add-complaint" placeholder="e.g. chest pain, shortness of breath">
+      </div>
+
+      <div id="add-error" style="font-size:13px;color:var(--red);margin-bottom:10px;display:none;"></div>
+      <button class="add-btn" onclick="addPatient()">➕ Add to Queue</button>
+
+      <div id="add-success" style="display:none;margin-top:12px;background:#F0FFF5;border:1px solid #A8D5B5;border-radius:8px;padding:12px;font-size:13px;color:#1A5C33;font-weight:600;text-align:center;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Patient Ticket Tab ══ -->
+<div id="tab-ticket" style="display:none;">
+  <div style="max-width:480px;margin:0 auto;padding:24px 16px 0;">
+    <div class="card">
+      <div class="card-title">Look Up Patient Ticket</div>
+      <div class="field">
+        <label>Select Patient</label>
+        <select id="ticket-select" onchange="showTicket()">
+          <option value="">— Choose a patient —</option>
+        </select>
+      </div>
+    </div>
+    <div id="ticket-view"></div>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────
+const CTAS_COLORS = { 1:'#C0392B', 2:'#E67E22', 3:'#D4AC0D', 4:'#27AE60', 5:'#2980B9' };
+const CTAS_LABELS = { 1:'CTAS 1 · Resuscitation', 2:'CTAS 2 · Emergent', 3:'CTAS 3 · Urgent', 4:'CTAS 4 · Less Urgent', 5:'CTAS 5 · Non-Urgent' };
+const CTAS_WAIT   = { 1:0, 2:15, 3:30, 4:60, 5:120 }; // minutes per CTAS level
+
+// Ticket counters per ER
+let counters = { ER1: 0, ER2: 0 };
+
+// Queue: array of patient objects
+let queue = [];
+
+// Pre-populate with 3 demo patients
+function seed() {
+  addToQueue({ name:'John Smith',    age:54, sex:'Male',   ctas:2, er:'ER1', complaint:'Chest pain radiating to left arm', arrivalOffset: -18 });
+  addToQueue({ name:'Maria Chen',    age:31, sex:'Female', ctas:3, er:'ER1', complaint:'Severe headache with nausea',       arrivalOffset: -10 });
+  addToQueue({ name:'Robert Taylor', age:67, sex:'Male',   ctas:1, er:'ER2', complaint:'Sudden loss of consciousness',      arrivalOffset: -5  });
+  addToQueue({ name:'Sarah Lee',     age:22, sex:'Female', ctas:4, er:'ER2', complaint:'Sprained ankle',                    arrivalOffset: -2  });
+}
+
+// ─── Core logic ──────────────────────────────────────────
+
+// Add a patient object to the queue
+function addToQueue({ name, age, sex, ctas, er, complaint='', arrivalOffset=0 }) {
+  counters[er]++;
+  const arrivalTime = new Date(Date.now() + arrivalOffset * 60000);
+  queue.push({
+    id: Date.now() + Math.random(),
+    ticketNum: counters[er],
+    name, age, sex,
+    ctas: parseInt(ctas),
+    er, complaint,
+    arrivalTime,
+  });
+  sortQueue();
+  render();
+}
+
+// Sort: CTAS level ASC (1 first), then arrival time ASC
+function sortQueue() {
+  queue.sort((a, b) => {
+    if (a.ctas !== b.ctas) return a.ctas - b.ctas;
+    return a.arrivalTime - b.arrivalTime;
+  });
+}
+
+// Calculate estimated wait for a patient:
+// sum CTAS target times of all patients ahead in the same ER
+function calcWait(patient) {
+  const erQueue = queue.filter(p => p.er === patient.er);
+  const idx = erQueue.findIndex(p => p.id === patient.id);
+  if (idx === 0) return 0;
+  return erQueue.slice(0, idx).reduce((sum, p) => sum + CTAS_WAIT[p.ctas], 0);
+}
+
+// Remove a patient (they've been seen)
+function dismiss(id) {
+  queue = queue.filter(p => p.id !== id);
+  render();
+}
+
+// ─── Render ──────────────────────────────────────────────
+function render() {
+  renderQueue('ER1');
+  renderQueue('ER2');
+  renderStats();
+  renderTicketSelect();
+}
+
+function renderQueue(er) {
+  const container = document.getElementById(`queue-${er.toLowerCase()}`);
+  const erQueue = queue.filter(p => p.er === er);
+
+  if (erQueue.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">🟢</div>No patients in queue</div>`;
+    return;
+  }
+
+  // Position within this ER queue
+  let html = '';
+  erQueue.forEach((p, idx) => {
+    const wait = calcWait(p);
+    const waitLabel = wait === 0 ? 'Now' : `~${wait} min`;
+    const color = CTAS_COLORS[p.ctas];
+    html += `
+      <div class="queue-item ctas-${p.ctas}">
+        <div class="ticket-num">#${p.ticketNum}</div>
+        <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
+          <div class="patient-info">
+            <div class="patient-name">${p.name}</div>
+            <div class="patient-meta">${p.age}y · ${p.sex}${p.complaint ? ' · ' + p.complaint : ''}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+          <span class="ctas-label" style="background:${color}">CTAS ${p.ctas}</span>
+          <span class="wait-time">⏱ ${waitLabel}</span>
+          <span style="font-size:10px;color:var(--muted)">Pos. ${idx+1}</span>
+        </div>
+        <button class="dismiss-btn" onclick="dismiss('${p.id}')" title="Mark as seen">✓</button>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderStats() {
+  const er1 = queue.filter(p => p.er === 'ER1').length;
+  const er2 = queue.filter(p => p.er === 'ER2').length;
+  const critical = queue.filter(p => p.ctas <= 2).length;
+  document.getElementById('stat-total').textContent = queue.length;
+  document.getElementById('stat-er1').textContent = er1;
+  document.getElementById('stat-er2').textContent = er2;
+  document.getElementById('stat-critical').textContent = critical;
+}
+
+function renderTicketSelect() {
+  const sel = document.getElementById('ticket-select');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Choose a patient —</option>';
+  queue.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = `#${p.ticketNum} ${p.name} (${p.er} · CTAS ${p.ctas})`;
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+}
+
+// ─── Ticket view ─────────────────────────────────────────
+function showTicket() {
+  const sel = document.getElementById('ticket-select');
+  const id = sel.value;
+  const view = document.getElementById('ticket-view');
+
+  if (!id) { view.innerHTML = ''; return; }
+
+  const p = queue.find(q => String(q.id) === String(id));
+  if (!p) { view.innerHTML = ''; return; }
+
+  const erQueue = queue.filter(q => q.er === p.er);
+  const pos = erQueue.findIndex(q => q.id === p.id) + 1;
+  const wait = calcWait(p);
+  const waitLabel = wait === 0 ? 'You are next!' : `~${wait} minutes`;
+  const color = CTAS_COLORS[p.ctas];
+  const arrivalStr = p.arrivalTime.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+
+  view.innerHTML = `
+    <div class="ticket-card">
+      <div class="ticket-top">🏥 Saint John ER Pre-Triage · Your Ticket</div>
+      <div class="ticket-number">#${p.ticketNum}</div>
+      <div class="ticket-name">${p.name}</div>
+      <div class="ticket-er">${p.er === 'ER1' ? 'ER1 — Saint John Regional' : 'ER2 — St. Joseph\'s Hospital'}</div>
+      <div class="ticket-ctas" style="background:${color}">${CTAS_LABELS[p.ctas]}</div>
+      <hr class="ticket-divider">
+      <div class="ticket-info-row">
+        <span class="ticket-info-label">Queue Position</span>
+        <span class="ticket-info-val">${pos} of ${erQueue.length}</span>
+      </div>
+      <div class="ticket-info-row">
+        <span class="ticket-info-label">Estimated Wait</span>
+        <span class="ticket-info-val" style="color:${wait===0?'#27AE60':color}">${waitLabel}</span>
+      </div>
+      <div class="ticket-info-row">
+        <span class="ticket-info-label">Check-in Time</span>
+        <span class="ticket-info-val">${arrivalStr}</span>
+      </div>
+      <div class="ticket-info-row">
+        <span class="ticket-info-label">Age / Sex</span>
+        <span class="ticket-info-val">${p.age} y/o · ${p.sex}</span>
+      </div>
+      <hr class="ticket-divider">
+      <div style="font-size:11px;color:var(--muted);line-height:1.6;">
+        Please remain in the waiting area. Your position updates automatically as patients are seen. 
+        Wait time is estimated based on Canadian CTAS target response times.
+      </div>
+    </div>`;
+}
+
+// ─── Add patient form ─────────────────────────────────────
+function addPatient() {
+  const name      = document.getElementById('add-name').value.trim();
+  const age       = document.getElementById('add-age').value.trim();
+  const sex       = document.getElementById('add-sex').value;
+  const ctas      = document.getElementById('add-ctas').value;
+  const er        = document.getElementById('add-er').value;
+  const complaint = document.getElementById('add-complaint').value.trim();
+  const errEl     = document.getElementById('add-error');
+  const successEl = document.getElementById('add-success');
+
+  errEl.style.display = 'none';
+  successEl.style.display = 'none';
+
+  if (!name)  return showAddError('Please enter patient name.');
+  if (!age)   return showAddError('Please enter patient age.');
+  if (!sex)   return showAddError('Please select sex.');
+  if (!ctas)  return showAddError('Please select CTAS level.');
+  if (!er)    return showAddError('Please select ER location.');
+
+  addToQueue({ name, age: parseInt(age), sex, ctas: parseInt(ctas), er, complaint });
+
+  // Reset form
+  document.getElementById('add-name').value = '';
+  document.getElementById('add-age').value = '';
+  document.getElementById('add-sex').value = '';
+  document.getElementById('add-ctas').value = '';
+  document.getElementById('add-er').value = '';
+  document.getElementById('add-complaint').value = '';
+
+  successEl.textContent = `✅ ${name} added to ${er} queue — Ticket #${counters[er]}`;
+  successEl.style.display = 'block';
+  setTimeout(() => successEl.style.display = 'none', 3000);
+}
+
+function showAddError(msg) {
+  const el = document.getElementById('add-error');
+  el.textContent = '❌ ' + msg;
+  el.style.display = 'block';
+}
+
+// ─── Tab switching ────────────────────────────────────────
+function switchTab(name) {
+  ['queue','add','ticket'].forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['queue','add','ticket'][i] === name);
+  });
+  if (name === 'queue') document.getElementById('stats-bar').style.display = 'flex';
+  else document.getElementById('stats-bar').style.display = 'none';
+
+  if (name === 'ticket') {
+    renderTicketSelect();
+    document.getElementById('ticket-view').innerHTML = '';
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────
+seed();
+render();
+</script>
+</body>
+</html>
