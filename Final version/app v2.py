@@ -304,6 +304,25 @@ st.markdown(
       color: var(--muted);
       font-size: 0.92rem;
     }
+    .pain-scale {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 4px;
+      margin-bottom: 6px;
+    }
+    .pain-scale-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 19px;
+      line-height: 1;
+    }
+    .pain-scale-item .num {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+    }
     .field-label {
       color: #000000 !important;
       font-size: 13px;
@@ -452,7 +471,25 @@ with st.container():
                 gender = st.selectbox("Gender", ["Select…", "Male", "Female", "Other"], label_visibility="collapsed")
 
             field_label("Pain Level")
-            pain = st.slider("Pain Level", 1, 10, 5, label_visibility="collapsed")
+            st.markdown(
+                """
+                <div class="pain-scale">
+                  <div class="pain-scale-item">😄<span class="num">0</span></div>
+                  <div class="pain-scale-item">🙂<span class="num">1</span></div>
+                  <div class="pain-scale-item">😌<span class="num">2</span></div>
+                  <div class="pain-scale-item">😐<span class="num">3</span></div>
+                  <div class="pain-scale-item">😕<span class="num">4</span></div>
+                  <div class="pain-scale-item">😟<span class="num">5</span></div>
+                  <div class="pain-scale-item">😣<span class="num">6</span></div>
+                  <div class="pain-scale-item">😖<span class="num">7</span></div>
+                  <div class="pain-scale-item">😫<span class="num">8</span></div>
+                  <div class="pain-scale-item">😢<span class="num">9</span></div>
+                  <div class="pain-scale-item">😭<span class="num">10</span></div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            pain = st.slider("Pain Level", 0, 10, 5, label_visibility="collapsed")
 
             st.markdown('<div class="card-title" style="margin-top:20px;">Symptoms</div>', unsafe_allow_html=True)
             field_label("Chief Complaint")
