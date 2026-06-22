@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saint John ER Pre-Triage</title>
+<style>
+  :root {
+    --red: #C0392B;
+    --red-dark: #8B1E1E;
+    --orange: #E67E22;
+    --yellow: #D4AC0D;
+    --green: #27AE60;
+    --blue: #2980B9;
+    --bg: #F7F9FC;
+    --card: #FFFFFF;
+    --text: #1A2332;
+    --muted: #6B7A90;
+    --border: #DDE3EC;
+    --accent: #1A4A7A;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: #000;
+    min-height: 100vh;
+  }
+
+  body {
+    padding: 0 0 60px;
+  }
+
+  header {
+    background: var(--accent);
+    color: white;
+    padding: 20px 24px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,.18);
+  }
+  header .cross {
+    width: 38px;
+    height: 38px;
+    background: white;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  header .cross span {
+    font-size: 22px;
+    line-height: 1;
+  }
+  header h1 { font-size: 18px; font-weight: 700; line-height: 1.2; }
+  header p  { font-size: 12px; opacity: .75; margin-top: 2px; }
+
+  .banner {
+    max-width: 560px;
+    margin: 18px auto 0;
+    background: #FFF8E1;
+    border-bottom: 2px solid #FFD54F;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-radius: 10px;
+    color: #000;
+  }
+
+  main {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 24px 16px 0;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 24px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .legend {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  .field { margin-bottom: 16px; }
+  .field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 6px;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  select,
+  textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #000;
+    background: white;
+    transition: border-color .15s, box-shadow .15s;
+    appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26,74,122,.12);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* Pain scale with emoji */
+  .pain-scale {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 2px;
+    margin-bottom: 8px;
+  }
+  .pain-scale-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 18px;
+    line-height: 1;
+    opacity: .45;
+    transition: opacity .15s, transform .15s;
+  }
+  .pain-scale-item.active {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+  .pain-scale-item .num {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+
+  .range-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  input[type="range"] {
+    flex: 1;
+    accent-color: var(--accent);
+    height: 4px;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+  .range-val {
+    min-width: 32px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .radio-card {
+    flex: 1;
+    min-width: 140px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .radio-card input { margin-top: 3px; accent-color: var(--accent); }
+  .radio-card.selected {
+    border-color: var(--accent);
+    background: rgba(26,74,122,.05);
+  }
+  .radio-card strong { font-size: 13px; display: block; }
+  .radio-card span   { font-size: 11px; color: var(--muted); }
+
+  .error-msg {
+    background: #FFF0F0;
+    border: 1px solid #FFCDD2;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--red);
+    margin-top: 12px;
+    display: none;
+  }
+
+  #submit-btn {
+    width: 100%;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: .02em;
+    transition: opacity .15s, transform .1s;
+    margin-top: 4px;
+  }
+  #submit-btn:hover:not(:disabled) { opacity: .92; }
+  #submit-btn:active:not(:disabled) { transform: scale(.98); }
+  #submit-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 3px solid rgba(255,255,255,.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result { display: none; }
+  .ctas-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-weight: 700;
+    font-size: 22px;
+    margin-bottom: 16px;
+    color: white;
+  }
+  .ctas-badge small {
+    font-size: 13px;
+    font-weight: 600;
+    display: block;
+    opacity: .9;
+  }
+
+  .result-section { margin-top: 16px; }
+  .result-section h4 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .result-section p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #000;
+  }
+  .result-section p,
+  .result-section strong,
+  .result-section em,
+  .result-section span {
+    color: #000 !important;
+  }
+
+  .red-flags {
+    list-style: none;
+    padding-left: 0;
+  }
+  .red-flags li {
+    font-size: 14px;
+    padding: 6px 10px;
+    background: #FFF5F5;
+    border-left: 3px solid var(--red-dark);
+    color: var(--red-dark);
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 6px;
+  }
+  .red-flags li::before {
+    content: "🚩 ";
+    color: var(--red-dark);
+  }
+
+  .helper-text {
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .new-btn {
+    margin-top: 20px;
+    width: 100%;
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .new-btn:hover { background: var(--accent); color: white; }
+
+  @media (max-width: 640px) {
+    .two-col {
+      grid-template-columns: 1fr;
+    }
+    header {
+      padding: 18px 16px 14px;
+    }
+    main {
+      padding: 18px 12px 0;
+    }
+    .pain-scale-item { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="cross"><span>🏥</span></div>
+  <div>
+    <h1>Saint John ER Pre-Triage</h1>
+    <p>AI-assisted CTAS assessment · For demonstration only</p>
+  </div>
+</header>
+
+<div class="banner">
+  <strong>Browser note:</strong>
+  <span>This standalone HTML version opens directly in your browser and mirrors the current Streamlit design.</span>
+</div>
+
+<main>
+  <div class="card" style="padding:14px 20px;">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">CTAS PRIORITY SCALE</div>
+    <div class="legend">
+      <div class="legend-item"><div class="dot" style="background:#C0392B"></div> 1 · Resuscitation</div>
+      <div class="legend-item"><div class="dot" style="background:#E67E22"></div> 2 · Emergent</div>
+      <div class="legend-item"><div class="dot" style="background:#D4AC0D"></div> 3 · Urgent</div>
+      <div class="legend-item"><div class="dot" style="background:#27AE60"></div> 4 · Less Urgent</div>
+      <div class="legend-item"><div class="dot" style="background:#2980B9"></div> 5 · Non-Urgent</div>
+    </div>
+  </div>
+
+  <div id="form-section">
+    <div class="card">
+      <div class="card-title">Patient Information</div>
+
+      <div class="field">
+        <label class="field-label" for="name">Full Name</label>
+        <input type="text" id="name" placeholder="e.g. Jane Smith">
+      </div>
+
+      <div class="two-col">
+        <div class="field">
+          <label class="field-label" for="age">Age</label>
+          <input type="number" id="age" min="0" max="120" placeholder="30">
+        </div>
+        <div class="field">
+          <label class="field-label" for="gender">Gender</label>
+          <select id="gender">
+            <option value="">Select…</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Pain Level</label>
+        <div class="pain-scale" id="pain-scale">
+          <div class="pain-scale-item" data-val="0">😄<span class="num">0</span></div>
+          <div class="pain-scale-item" data-val="1">🙂<span class="num">1</span></div>
+          <div class="pain-scale-item" data-val="2">😌<span class="num">2</span></div>
+          <div class="pain-scale-item" data-val="3">😐<span class="num">3</span></div>
+          <div class="pain-scale-item" data-val="4">😕<span class="num">4</span></div>
+          <div class="pain-scale-item" data-val="5">😟<span class="num">5</span></div>
+          <div class="pain-scale-item" data-val="6">😣<span class="num">6</span></div>
+          <div class="pain-scale-item" data-val="7">😖<span class="num">7</span></div>
+          <div class="pain-scale-item" data-val="8">😫<span class="num">8</span></div>
+          <div class="pain-scale-item" data-val="9">😢<span class="num">9</span></div>
+          <div class="pain-scale-item" data-val="10">😭<span class="num">10</span></div>
+        </div>
+        <div class="range-wrap">
+          <input type="range" id="pain" min="0" max="10" value="5" oninput="updatePain(this.value)">
+          <div class="range-val" id="pain-val">5</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Symptoms</div>
+
+      <div class="field">
+        <label class="field-label" for="symptom">Chief Complaint</label>
+        <textarea id="symptom" placeholder="Describe the main symptom or reason for visit…"></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="duration">Duration</label>
+        <input type="text" id="duration" placeholder="e.g. 2 hours, since yesterday morning">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="history">Medical History</label>
+        <textarea id="history" placeholder="e.g. hypertension, diabetes, allergies…" style="min-height:70px"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Visit Details</div>
+
+      <div class="field">
+        <label class="field-label">Emergency Room</label>
+        <div class="radio-group">
+          <label class="radio-card selected">
+            <input type="radio" name="er" value="ER1" checked onchange="selectER(this)">
+            <div>
+              <strong>ER1</strong>
+              <span>First emergency room</span>
+            </div>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="er" value="ER2" onchange="selectER(this)">
+            <div>
+              <strong>ER2</strong>
+              <span>Second emergency room</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="error-msg" id="error-msg"></div>
+      <button id="submit-btn" onclick="submitForm()">🤖 Submit for CTAS Assessment</button>
+    </div>
+  </div>
+
+  <div class="card result" id="result">
+    <div id="ctas-badge-wrap"></div>
+
+    <div class="result-section">
+      <h4>Clinical Summary</h4>
+      <p id="result-summary"></p>
+    </div>
+
+    <div class="result-section" id="flags-section" style="display:none">
+      <h4>Red Flags</h4>
+      <ul class="red-flags" id="result-flags"></ul>
+    </div>
+
+    <button class="new-btn" onclick="resetForm()">← New Patient Check-In</button>
+  </div>
+</main>
+
+<script>
+const CTAS_COLORS = { 1:'#C0392B', 2:'#E67E22', 3:'#D4AC0D', 4:'#27AE60', 5:'#2980B9' };
+const CTAS_LABELS = { 1:'Resuscitation', 2:'Emergent', 3:'Urgent', 4:'Less Urgent', 5:'Non-Urgent' };
+const CTAS_ICONS = ['🔴','🟠','🟡','🟢','🔵'];
+
+function updatePain(val) {
+  document.getElementById('pain-val').textContent = val;
+  document.querySelectorAll('#pain-scale .pain-scale-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.val === String(val));
+  });
+}
+
+function parseDurationHours(text) {
+  const clean = (text || '').toLowerCase().trim();
+  const m = clean.match(/(\d+(?:\.\d+)?)\s*(hour|hours|hr|hrs|h)\b/);
+  if (m) return Math.max(0, parseFloat(m[1]));
+  if (clean.includes('day')) return 24;
+  if (clean.includes('minute') || clean.includes('min')) return 1;
+  return 6;
+}
+
+function estimateWaitTime(priority, peopleAhead) {
+  const base = { 1: 10, 2: 20, 3: 35, 4: 55, 5: 75 };
+  return base[priority] + peopleAhead * 12;
+}
+
+function assessTriage({ age, pain, fever, symptomText, durationHours, history, erLocation }) {
+  let score = 5;
+  const reasons = [];
+  const symptom = symptomText.toLowerCase();
+  const med = history.toLowerCase();
+
+  if (['chest pain', 'shortness of breath', 'trouble breathing', 'stroke', 'unconscious'].some(t => symptom.includes(t))) {
+    score = Math.min(score, 2);
+    reasons.push('high-risk symptom pattern');
+  }
+  if (['severe', 'bleeding', 'trauma', 'broken', 'fracture'].some(t => symptom.includes(t))) {
+    score = Math.min(score, 2);
+    reasons.push('acute injury or bleeding concern');
+  }
+  if (fever >= 39 || pain >= 8) {
+    score = Math.min(score, 3);
+    reasons.push('high symptom severity');
+  } else if (fever >= 38 || pain >= 6) {
+    score = Math.min(score, 4);
+    reasons.push('moderate symptom severity');
+  }
+  if (age >= 75 && score > 3) {
+    score = 3;
+    reasons.push('older adult risk');
+  }
+  if (['diabetes', 'heart', 'asthma'].some(t => med.includes(t))) {
+    score = Math.min(score, 4);
+    reasons.push('relevant medical history');
+  }
+  if (durationHours <= 2 && score > 2) {
+    score = 3;
+    reasons.push('recent onset');
+  }
+
+  reasons.push(erLocation === 'ER1' ? 'assigned to ER1' : 'assigned to ER2');
+  return {
+    score,
+    label: CTAS_LABELS[score],
+    reasons: reasons.length ? reasons : ['stable presentation'],
+  };
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function clearError() {
+  const el = document.getElementById('error-msg');
+  el.style.display = 'none';
+}
+
+function selectER(el) {
+  document.querySelectorAll('.radio-card').forEach(card => card.classList.remove('selected'));
+  el.closest('.radio-card').classList.add('selected');
+}
+
+function submitForm() {
+  clearError();
+  const name = document.getElementById('name').value.trim();
+  const age = Number(document.getElementById('age').value);
+  const gender = document.getElementById('gender').value;
+  const pain = Number(document.getElementById('pain').value);
+  const symptom = document.getElementById('symptom').value.trim();
+  const duration = document.getElementById('duration').value.trim();
+  const history = document.getElementById('history').value.trim() || 'None reported';
+  const er = document.querySelector('input[name="er"]:checked')?.value || 'ER1';
+
+  if (!name) return showError('Please enter the patient name.');
+  if (!age) return showError('Please enter the patient age.');
+  if (!gender) return showError('Please select gender.');
+  if (!symptom) return showError('Please describe the chief complaint.');
+  if (!duration) return showError('Please enter symptom duration.');
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Assessing...';
+
+  setTimeout(() => {
+    const result = assessTriage({
+      age,
+      pain,
+      fever: 37.0,
+      symptomText: symptom,
+      durationHours: parseDurationHours(duration),
+      history,
+      erLocation: er,
+    });
+    const waitMinutes = estimateWaitTime(result.score, 0);
+    showResult({ ...result, waitMinutes }, { name, age, gender, symptom, history, er });
+    btn.disabled = false;
+    btn.innerHTML = '🤖 Submit for CTAS Assessment';
+  }, 400);
+}
+
+function showResult(result, patient) {
+  document.getElementById('form-section').style.display = 'none';
+  const resultEl = document.getElementById('result');
+  resultEl.style.display = 'block';
+
+  document.getElementById('ctas-badge-wrap').innerHTML = `
+    <div style="margin-bottom:6px;font-size:13px;font-weight:600;color:var(--muted)">Patient: ${patient.name}, ${patient.age} y/o ${patient.gender}</div>
+    <div class="ctas-badge" style="background:${CTAS_COLORS[result.score]}">
+      <span style="font-size:32px">${CTAS_ICONS[result.score - 1]}</span>
+      <div>
+        CTAS ${result.score}
+        <small>${result.label}</small>
+      </div>
+    </div>`;
+
+  document.getElementById('result-summary').textContent =
+    `${result.reasons.join(', ').replace(/^\w/, c => c.toUpperCase())}. Estimated wait time is about ${result.waitMinutes} minutes for ${patient.er}.`;
+
+  const flagsSection = document.getElementById('flags-section');
+  const flagsList = document.getElementById('result-flags');
+  flagsList.innerHTML = '';
+
+  const flags = [];
+  const symptom = patient.symptom.toLowerCase();
+  const history = patient.history.toLowerCase();
+  if (['chest pain', 'shortness of breath', 'bleeding', 'stroke', 'unconscious'].some(t => symptom.includes(t))) {
+    flags.push('High-risk symptom requires immediate clinician review.');
+  }
+  if (['heart', 'diabetes', 'asthma'].some(t => history.includes(t))) {
+    flags.push('Medical history may increase triage urgency.');
+  }
+  if (!flags.length) flags.push('No major red flags were detected in this demo review.');
+
+  flags.forEach(flag => {
+    const li = document.createElement('li');
+    li.textContent = flag;
+    flagsList.appendChild(li);
+  });
+  flagsSection.style.display = 'block';
+  resultEl.scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetForm() {
+  document.getElementById('form-section').style.display = 'block';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('name').value = '';
+  document.getElementById('age').value = '';
+  document.getElementById('gender').value = '';
+  document.getElementById('pain').value = 5;
+  updatePain(5);
+  document.getElementById('symptom').value = '';
+  document.getElementById('duration').value = '';
+  document.getElementById('history').value = '';
+  document.querySelector('input[name="er"][value="ER1"]').checked = true;
+  document.querySelectorAll('.radio-card').forEach(card => card.classList.remove('selected'));
+  document.querySelector('.radio-card').classList.add('selected');
+  clearError();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Initialize emoji highlight on load
+updatePain(5);
+</script>
+</body>
+</html>
